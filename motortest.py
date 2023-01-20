@@ -30,6 +30,8 @@ def moveDiag(dx,dy,t):
     numSteps = math.lcm(xSteps,ySteps)
     stepTime = t/numSteps #in seconds
     xRate,yRate = numSteps/xSteps,numSteps/ySteps
+    print(xSteps,ySteps,stepTime)
+
     for i in range(numSteps):
         if i%xRate == 0:
             xDir = stepper.BACKWARD if dx < 0 else stepper.FORWARD
@@ -91,10 +93,26 @@ def multStepTest():
     kit.stepper1.release()
     kit.stepper2.release()
 
+def diagMoveTest():
+    while True:
+        try:
+            dx = int(input("direction x: "))
+            dy = int(input("direction y: "))
+            t = int(input("time: "))
+            moveDiag(dx,dy,t)
+        except Exception as e:
+            print(e)
+            kit.stepper1.release()
+            kit.stepper2.release()
+            break
+    kit.stepper1.release()
+    kit.stepper2.release()
+
 #NOTE ONLY DO 'Y' MOTION FOR NOW (w/s keys) bc that corresponds to the thing on top
 def main():
     #singleStepTest()
-    multStepTest()
+    #multStepTest()
+    diagMoveTest()
 
             
         
