@@ -10,6 +10,10 @@ from controlsHeader import *
 from graphicsHeader import *
 from cmu_graphics import *
 
+#TODO: create app level representation of map obstacles
+# split into grid, pathfind from start/finish while avoiding obstacles
+# grab lines 
+
 def initLimitSwitches(app):
     app.xSwitch = 1
     app.ySwitch = 2
@@ -70,6 +74,9 @@ def generateNextPoint(app):
     x = random.randrange(max(0,int(app.x-20)),min(app.xMax,int(app.x+20)),5)
     y = random.randrange(max(0,int(app.y-20)),min(app.yMax,int(app.y+20)),5)
     totalT = random.randrange(10,50)/10
+    smoothLine(app,x,y,totalT)
+
+def smoothLine(app,x,y,totalT):
     steps = math.ceil(distance(x,y,app.x,app.y))
     dx, dy, timeStep = (x-app.x)/steps, (y-app.y)/steps, totalT/steps
     app.motionCommands += [(dx,dy,timeStep)]*steps
