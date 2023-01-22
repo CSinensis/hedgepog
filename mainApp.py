@@ -33,6 +33,7 @@ def initLimitSwitches(app):
 
 def onAppStart(app):
     initViewVars(app)
+    initBehaviorVars(app)
     app.xMot,app.yMot = initMotors()
     initLimitSwitches(app)
 
@@ -46,8 +47,7 @@ def onAppStart(app):
     app.move = False
     app.prevTime = None
     app.cycle = 0
-    app.houseX = 2
-    app.houseY = 28
+    
 
 def setPos(app):
     app.x = app.y = 0
@@ -64,8 +64,23 @@ def onMousePress(app,mouseX,mouseY):
         print(x,y)
         print(x - app.x,y - app.y)
         moveDiag(app,x - app.x,y - app.y,2)
+        app.toIncrease = None
     elif app.b1.inBounds(mouseX,mouseY):
         goHome(app)
+
+def onMousePress(app,mouseX,mouseY):
+    if app.b1.inBounds(mouseX,mouseY):
+        goHome(app)
+    elif app.b2.inBounds(mouseX,mouseY):
+        if app.feeding:
+            app.toIncrease = None
+        else:
+            goFood(app)
+            app.toIncrease = app.hunger
+        app.feeding = not app.feeding
+    elif app.b3.inBounds(mouseX,mouseY):
+        dance(app)
+        app.toIncrease = app.mood
         
         
 def zero(app):
@@ -77,8 +92,6 @@ def zero(app):
     setPos(app)
     print(app.x,app.y)
 
-def goHome(app):
-    moveDiag(app,app.houseX - app.x,app.houseY - app.y,2)
     
 def getMaxBounds(app):
     while GPIO.input(app.xSwitchMax) != GPIO.HIGH:
@@ -110,11 +123,6 @@ def onKeyPress(app,key):
     '''
 
 
-def onKeyRelease(app,key):
-    return
-    if key == 'w':
-        app.move= not app.move
-
 
 #NOTE: 0,0 is at the BOTTOM LEFT
 def onKeyHold(app,keys):
@@ -127,11 +135,11 @@ def onKeyHold(app,keys):
         #step(app,app.yMot,1)
     elif 's' in keys and app.y - app.stepD > 0:
         #step(app,app.yMot,-1)
-        app.motionCommands.append((0,-0.5,0.4))
+        app.motionCommands.append((0,-1.5,0.4))
     if 'd' in keys and app.x + app.stepD < app.xMax:
         app.motionCommands.append((1.5,0,0.4))
     elif 'a' in keys and app.x - app.stepD > 0: 
-        app.motionCommands.append((-1.50,0,0.4))
+        app.motionCommands.append((-1.5,0,0.4))
 
 def distance(x1,y1,x2,y2):
     return ((x1-x2)**2 + (y1-y2)**2)**0.5
@@ -143,7 +151,7 @@ def generateNextPoint(app):
     smoothLine(app,x,y,totalT)
 
 def smoothLine(app,x,y,totalT):
-    steps = math.ceil(distance(x,y,app.x,app.y))
+    steps = math.ceil(distance(x,y,app.x,app.y))/3
     dx, dy, timeStep = (x-app.x)/steps, (y-app.y)/steps, totalT/steps
     app.motionCommands += [(dx,dy,timeStep)]*steps
 
@@ -168,13 +176,17 @@ def onStep(app):
         moveDiag(app,dx,dy,t)
     elif app.hedgeMode == 'idle':
         generateNextPoint(app)
-    nT = time.time()
-    #print(nT - app.prevTime)
-    app.prevTime = nT
+    
+    app.energy.dec()
+    app.hunger.dec()
+    app.mood.dec()
+    updateHedgeStatus(app)
+    if app.toIncrease != None:
+        app.toIncrease.inc()
+        if app.feeding and len(app.motionCommands) == 0:
+            circle(app,3)
     
 def redrawAll(app):
-    #if app.cycle % 10 != 0:
-     #   return
 
     drawRect(app.boxX,app.boxY,app.boxW,app.boxH,fill=None,border='black')
     drawLabel('HedgePog',app.margin,app.margin,
