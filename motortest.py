@@ -66,6 +66,7 @@ def singleStepTest():
 
 def moveXY(motor,direc,steps):
     for i in range(steps):
+        #print(motor,direc)
         motor.onestep(direction = direc)
         #time.sleep(0.05)
 
@@ -111,8 +112,8 @@ def diagMoveTest():
 #NOTE ONLY DO 'Y' MOTION FOR NOW (w/s keys) bc that corresponds to the thing on top
 def main():
     #singleStepTest()
-    #multStepTest()
-    diagMoveTest()
+    multStepTest()
+    #diagMoveTest()
 
             
         

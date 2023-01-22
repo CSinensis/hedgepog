@@ -50,6 +50,6 @@ def drawButtons(app):
     app.b3.draw(app)
     
 def drawHedgehog(app):
-    relX = 2*app.margin + app.x/app.xMax * app.boxW
-    relY = 600 - 2*app.margin - app.y/app.yMax * app.boxH
+    relX = 2*app.margin + app.x/app.xMax * (app.boxW-2*app.margin)
+    relY = 600 - 2*app.margin - app.y/app.yMax * (app.boxH-2*app.margin)
     drawCircle(relX,relY,10,fill='red')

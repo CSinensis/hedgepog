@@ -4,6 +4,7 @@ import board
 from adafruit_motor import stepper
 from adafruit_motorkit import MotorKit
 from cmu_graphics import *
+import RPi.GPIO as GPIO
 
 class projectVars():
     d = 1.75 #CENTIMETERS
@@ -22,43 +23,59 @@ def initMotors():
     kit.stepper2.release()
     return(kit.stepper1,kit.stepper2)
 
+def releaseMotors(app):
+    app.xMot.release()
+    app.yMot.release()
 
 #TODO: CHECK IF DIRECTION OF MOTOR MOVEMENT CORRESPONDS PROPERLY W/LIMIT SWITCH STUFF
 def inBounds(app,motor,stepDir):
-    if (GPIO.input(app.xSwitch) == GPIO.HIGH and 
+    '''
+    if (GPIO.input(app.xSwitchMax) == GPIO.HIGH or
+        GPIO.input(app.xSwitchMin) == GPIO.HIGH or
+        GPIO.input(app.ySwitchMax) == GPIO.HIGH or
+        GPIO.input(app.ySwitchMin) == GPIO.HIGH):
+        print(GPIO.input(app.xSwitchMax),GPIO.input(app.xSwitchMin),GPIO.input(app.ySwitchMax),GPIO.input(app.ySwitchMin))
+        return False
+    '''
+    if (GPIO.input(app.xSwitchMax) == GPIO.HIGH and 
         motor == app.xMot and stepDir == 1):
-        print("PAST X LIMIT")
+        print("PAST X LIMIT (max)")
         return False
-    elif (GPIO.input(app.xSwitch) == GPIO.HIGH 
+    elif (GPIO.input(app.xSwitchMin) == GPIO.HIGH and 
+        motor == app.xMot and stepDir == -1):
+        print(GPIO.input(app.xSwitchMin))
+        print("PAST X LIMIT (min)")
+        return False
+    elif (GPIO.input(app.ySwitchMax) == GPIO.HIGH 
         and motor == app.yMot and stepDir == 1):
-        print("PAST Y LIMIT")
+        print("PAST Y LIMIT (max)")
         return False
-    
-    if motor == app.xMot:
-        if 0 < app.x + app.stepD*stepDir < app.xMax:
-            app.x += app.stepD*stepDir
-        else:
-            print("PAST X LIMIT - maybe")
-            return False
-    else:
-        if 0 < app.y + app.stepD*stepDir < app.yMax:
-            app.y += app.stepD*stepDir
-        else:
-            print("PAST Y LIMIT - maybe")
-            return False
-
+    elif (GPIO.input(app.ySwitchMin) == GPIO.HIGH and 
+        motor == app.yMot and stepDir == -1):
+        print("PAST Y LIMIT (min)")
+        return False
     return True
 
 def step(app,motor,stepDir):
-    if not inBounds(app,motor,stepDir): return
-
-    motor.onestep(direction = stepper.FORWARD if stepDir == 1 else stepper.BACKWARD)
+    if not inBounds(app,motor,stepDir):
+        print("OOB")
+        return
+    
+    if motor == app.xMot:
+        app.x += app.stepD*stepDir
+    else:
+        app.y += app.stepD*stepDir
+    direc = stepper.BACKWARD if stepDir == 1 else stepper.FORWARD
+    #for i in range(10):
+    motor.onestep(direction = direc,style=stepper.DOUBLE)
+        #if i < 9: time.sleep(0.05)
 
 def moveXY(app,motor,direc,steps,t):
     stepTime = t/steps
     for i in range(steps):
         step(app,motor,direc)
-        time.sleep(stepTime)
+        #if i < steps-1: time.sleep(stepTime)
+
 
 def moveDiag(app,dx,dy,t):
     xSteps,ySteps = distToSteps(abs(dx)),distToSteps(abs(dy))
@@ -75,7 +92,7 @@ def moveDiag(app,dx,dy,t):
     xDir = -1 if dx < 0 else 1
     yDir = -1 if dy < 0 else 1
     for i in range(numSteps):
-        print(i)
+        #print(i)
         if i%xRate == 0:
             step(app,app.xMot,xDir)
         if i%yRate == 0:
