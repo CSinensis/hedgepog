@@ -47,7 +47,6 @@ def onAppStart(app):
     app.move = False
     app.prevTime = None
     app.cycle = 0
-    
 
 def setPos(app):
     app.x = app.y = 0
@@ -63,25 +62,28 @@ def onMousePress(app,mouseX,mouseY):
         y = app.yMax*(600 - mouseY - app.margin)/(app.boxH - 2*app.margin)
         print(x,y)
         print(x - app.x,y - app.y)
+        app.hedgeMode = None
+        app.motionCommands = []
         moveDiag(app,x - app.x,y - app.y,2)
         app.toIncrease = None
     elif app.b1.inBounds(mouseX,mouseY):
-        goHome(app)
-
-def onMousePress(app,mouseX,mouseY):
-    if app.b1.inBounds(mouseX,mouseY):
+        app.motionCommands = []
         goHome(app)
     elif app.b2.inBounds(mouseX,mouseY):
         if app.feeding:
             app.toIncrease = None
+            app.motionCommands = []
+            app.b2.text = 'Feed'
         else:
+            app.motionCommands = []
+            app.b2.text = 'Feeding'
             goFood(app)
             app.toIncrease = app.hunger
         app.feeding = not app.feeding
     elif app.b3.inBounds(mouseX,mouseY):
+        app.hedgeMode = None
         dance(app)
         app.toIncrease = app.mood
-        
         
 def zero(app):
     app.x, app.y = 50,50
@@ -123,7 +125,6 @@ def onKeyPress(app,key):
     '''
 
 
-
 #NOTE: 0,0 is at the BOTTOM LEFT
 def onKeyHold(app,keys):
     #print(keys)
@@ -141,6 +142,7 @@ def onKeyHold(app,keys):
     elif 'a' in keys and app.x - app.stepD > 0: 
         app.motionCommands.append((-1.5,0,0.4))
 
+
 def distance(x1,y1,x2,y2):
     return ((x1-x2)**2 + (y1-y2)**2)**0.5
 
@@ -151,7 +153,8 @@ def generateNextPoint(app):
     smoothLine(app,x,y,totalT)
 
 def smoothLine(app,x,y,totalT):
-    steps = math.ceil(distance(x,y,app.x,app.y))/3
+    steps = int(math.ceil(distance(x,y,app.x,app.y))/3)
+    if steps == 0: return
     dx, dy, timeStep = (x-app.x)/steps, (y-app.y)/steps, totalT/steps
     app.motionCommands += [(dx,dy,timeStep)]*steps
 
@@ -176,6 +179,9 @@ def onStep(app):
         moveDiag(app,dx,dy,t)
     elif app.hedgeMode == 'idle':
         generateNextPoint(app)
+    nT = time.time()
+    #print(nT - app.prevTime)
+    app.prevTime = nT
     
     app.energy.dec()
     app.hunger.dec()

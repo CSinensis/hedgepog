@@ -153,33 +153,7 @@ def lcm(x, y):
 
    return lcm
 
-def updateHedgeStatus(app):
-    urgentStatus = status.mostUrgent(app.hunger,app.mood,app.energy)
-    if urgentStatus != None:
-        app.hedgeMessage = urgentStatus.getMessage()
-        app.hedgeStatus = urgentStatus.text
-    else:
-        app.hedgeStatus = 'Alive'
-        app.hedgeMessage = 'nyah'
 
-def goHome(app):
-    moveDiag(app,app.houseX - app.x,app.houseY - app.y,2)
-    app.toIncrease = app.energy
-
-def goFood(app):
-    #motor commands
-    moveDiag(app,app.foodX - app.x,app.foodY - app.y,2)
-    app.toIncrease = app.hunger
-
-def dance(app):
-    dx,dy = 1,1
-    seq = [(0,dy,1),(0,-dy,1),(0,-dy,1),(0,dy,1),
-           (dx,0,1),(-dx,0,1),(-dx,0,1),(dx,0,1),
-           (dx,dy,1),(-dx,-dy,1),(-dx,-dy,1),(dx,dy,1),
-           (-dx,dy,1),(dx,-dy,1),(dx,-dy,1),(-dx,dy,1)]
-    app.motionCommands.append(seq)
-    app.toIncrease = app.mood
-    pass
 
 
 

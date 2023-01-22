@@ -1,4 +1,5 @@
 from cmu_graphics import *
+from controlsHeader import *
 
 class Button():
     def __init__(self,x,y,w,h,color,text,font):
@@ -75,17 +76,21 @@ def initViewVars(app):
     app.boxY = app.margin + 0.2*app.h
     app.boxW = app.w*3/4
     app.boxH = app.h*4/5
-    
+
+    app.statY = app.boxY
+    app.statH = 148
+
+    app.butH = 40
     app.butX = app.boxX + app.boxW + app.margin
+    app.butY = app.boxY + 208 + app.butH
     app.butW = width-app.margin-app.butX
-    app.butH = 50
-    #print(app.boxY)
+    print(app.boxY)
     
-    app.b1 = Button(app.butX,app.boxY,app.butW,app.butH,
+    app.b1 = Button(app.butX,app.butY,app.butW,app.butH,
             'lightBlue','Go Home',app.font)
-    app.b2 = Button(app.butX,app.boxY+2*app.butH,app.butW,app.butH,
+    app.b2 = Button(app.butX,app.butY+2*app.butH,app.butW,app.butH,
             'lightBlue','Feed',app.font)
-    app.b3 = Button(app.butX,app.boxY+4*app.butH,app.butW,app.butH,
+    app.b3 = Button(app.butX,app.butY+4*app.butH,app.butW,app.butH,
             'lightBlue','Dance',app.font)
 
 def drawStatus(app):
@@ -105,21 +110,48 @@ def drawHedgehog(app):
     relY = 600 - 2*app.margin - app.y/app.yMax * (app.boxH-2*app.margin)
     drawCircle(relX,relY,10,fill='red')
 
+def updateHedgeStatus(app):
+    urgentStatus = status.mostUrgent(app.hunger,app.mood,app.energy)
+    if urgentStatus != None:
+        app.hedgeMessage = urgentStatus.getMessage()
+        app.hedgeStatus = urgentStatus.text
+    else:
+        app.hedgeStatus = 'Alive'
+        app.hedgeMessage = 'nyah'
+
+def goHome(app):
+    moveDiag(app,app.houseX - app.x,app.houseY - app.y,2)
+    app.toIncrease = app.energy
+
+def goFood(app):
+    #motor commands
+    moveDiag(app,app.foodX - app.x,app.foodY - app.y,2)
+    app.toIncrease = app.hunger
+
+def dance(app):
+    dx,dy = 1,1
+    seq = [(0,dy,1),(0,-dy,1),(0,-dy,1),(0,dy,1),
+           (dx,0,1),(-dx,0,1),(-dx,0,1),(dx,0,1),
+           (dx,dy,1),(-dx,-dy,1),(-dx,-dy,1),(dx,dy,1),
+           (-dx,dy,1),(dx,-dy,1),(dx,-dy,1),(-dx,dy,1)]
+    app.motionCommands.extend(seq)
+    app.toIncrease = app.mood
+    pass
 
 def initBehaviorVars(app):
     app.toIncrease = None
     app.feeding = False
     app.hedgeStatus = 'Alive (for now)'
-    app.energy = status('Energy',app.butX,app.statY,app.butW,app.statH/3,0.00005,'Tired')
+    app.energy = status('Energy',app.butX,app.statY,app.butW,app.statH/3,0.0002,'Tired')
     app.energy.messages = ['Feeling a bit tired', 'Wanna go home','let me sleep please']
-    app.hunger = status('Hunger',app.butX,app.statY+app.statH/3+app.margin,app.butW,app.statH/3,0.0001,'Hungry')
+    app.hunger = status('Hunger',app.butX,app.statY+app.statH/3+app.margin,app.butW,app.statH/3,0.0005,'Hungry')
     app.hunger.messages = ['Feeling a bit hungry', 'Can I has food?','FEEEEEEEEED MEEEE']
-    app.mood = status('Mood',app.butX,app.statY+2*app.statH/3+2*app.margin,app.butW,app.statH/3,0.0002,'Bored')
+    app.mood = status('Mood',app.butX,app.statY+2*app.statH/3+2*app.margin,app.butW,app.statH/3,0.001,'Bored')
     app.mood.messages = ["I'm bored! Entertain me!","*sighs* you're no fun","ugh I might play league or something"]
     app.hedgeMessage = "Hello!!!!!!"
     app.houseX = 2
     app.houseY = 28
-    app.foodX = 10
+    app.foodX = 22
     app.foodY = 10
 
 def drawStatus(app):
