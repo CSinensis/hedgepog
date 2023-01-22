@@ -53,6 +53,7 @@ def onAppStart(app):
     app.hedgeMode = 'input'
     app.motionCommands = []
     app.stepsPerSecond = 1000
+    getExtraVars(app)
 
 def onKeyHold(app,keys):
     if 'up' in keys and app.y + app.stepD < app.yMax:
@@ -172,6 +173,17 @@ def onStep(app):
         moveDiag(app,dx,dy,t)
     elif app.hedgeMode == 'idle':
         generateNextPoint(app)
+    #####
+    app.energy.dec()
+    app.hunger.dec()
+    app.mood.dec()
+    updateHedgeStatus(app)
+    if app.toIncrease != None:
+        app.toIncrease.inc()
+        if app.feeding and len(app.motionCommands) == 0:
+            circle(app,3)
+    ####
+
         
 
 def initViewVars(app):
@@ -185,27 +197,140 @@ def initViewVars(app):
     app.boxY = app.margin + 0.2*app.h
     app.boxW = app.w*3/4
     app.boxH = app.h*4/5
-    
+
+    app.statY = app.boxY
+    app.statH = 148
+
+    app.butH = 40
     app.butX = app.boxX + app.boxW + app.margin
+    app.butY = app.boxY + 208 + app.butH
     app.butW = width-app.margin-app.butX
-    app.butH = 50
     print(app.boxY)
     
-    app.b1 = Button(app.butX,app.boxY,app.butW,app.butH,
+    app.b1 = Button(app.butX,app.butY,app.butW,app.butH,
             'lightBlue','Go Home',app.font)
-    app.b2 = Button(app.butX,app.boxY+2*app.butH,app.butW,app.butH,
+    app.b2 = Button(app.butX,app.butY+2*app.butH,app.butW,app.butH,
             'lightBlue','Feed',app.font)
-    app.b3 = Button(app.butX,app.boxY+4*app.butH,app.butW,app.butH,
+    app.b3 = Button(app.butX,app.butY+4*app.butH,app.butW,app.butH,
             'lightBlue','Dance',app.font)
+
+
+class status():
+    def __init__(self,label,x,y,w,h,rate,text):
+        self.label = label
+        self.x,self.y,self.w,self.h = x,y,w,h
+        self.value = 1
+        self.rate = rate
+        self.messages = []
+        self.text = text
     
+    def show(self):
+        drawLabel(f'{self.label}',self.x,self.y,align='left-top',size=18)
+        drawRect(self.x,self.y + self.h/2,self.w*self.value,self.h/2,fill = self.getColor())
+        drawRect(self.x,self.y + self.h/2,self.w,self.h/2,fill = None,border='black')
+    
+    def getColor(self):
+        if self.value > 0.75:
+            return 'lightGreen'
+        elif self.value > 0.25:
+            return 'khaki'
+        else:
+            return 'darkRed'
+    
+    def inc(self):
+        if self.value <= 0.9:
+            self.value += 0.1
+        else: self.value = 1
+
+    def dec(self):
+        if self.value > self.rate+0.01:
+            self.value -= self.rate
+    
+    def getMessage(self):
+        if self.value > 0.5:
+            return self.messages[0]
+        elif self.value > 0.25:
+            return self.messages[1]
+        else:
+            return self.messages[2]
+
+    @staticmethod
+    def mostUrgent(s1,s2,s3):
+        minVal = min(s1.value,s2.value,s3.value)
+        if minVal > 0.75: return None
+
+        if s1.value == minVal:
+            return s1
+        elif s2.value == minVal:
+            return s2
+        else:
+            return s3
+
+def updateHedgeStatus(app):
+    urgentStatus = status.mostUrgent(app.hunger,app.mood,app.energy)
+    if urgentStatus != None:
+        app.hedgeMessage = urgentStatus.getMessage()
+        app.hedgeStatus = urgentStatus.text
+    else:
+        app.hedgeStatus = 'Alive'
+        app.hedgeMessage = 'nyah'
+
+def goHome(app):
+    #motor commands
+    app.toIncrease = app.energy
+
+def goFood(app):
+    #motor commands
+    app.toIncrease = app.hunger
+
+def dance(app):
+    pass
+
+def onMousePress(app,mouseX,mouseY):
+    if app.b1.inBounds(mouseX,mouseY):
+        goHome(app)
+    elif app.b2.inBounds(mouseX,mouseY):
+        if app.feeding:
+            app.toIncrease = None
+        else:
+            goFood(app)
+            app.toIncrease = app.hunger
+        app.feeding = not app.feeding
+    elif app.b3.inBounds(mouseX,mouseY):
+        dance(app)
+        app.toIncrease = app.mood
+
+
 def drawStatus(app):
     drawRect(app.w/2,-2,800-app.w/2+2,app.boxY-app.margin+2,
         fill=None,border='black',dashes=True)
-
-    drawImage('https://www.simpleimageresizer.com/_uploads/photos/3bcc4a0a/fotor_2023-1-21_0_40_3_1_90.png',
-    app.w/2+app.margin/2,5)
+    drawImage('hedgepogIcon.png',app.w/2+app.margin/2,5)
     drawCircle(app.w/2 + app.margin/2 + 48,5+48,48,fill=None,border='black',borderWidth=2)
-    
+    drawLabel(f'Status: {app.hedgeStatus}',app.w/2 + app.margin + 2*48,app.margin,align = 'left-top',size=25)
+    drawRect(app.butX,app.statY,app.butW,app.statH,fill=None)
+    drawLabel(f'HedgePog Says:',app.w/2 + app.margin + 2*48,app.statH/2-app.margin,align='left-top',size=15)
+    drawLabel(f'{app.hedgeMessage}',app.w/2 + app.margin + 2*48,app.statH/2,align='left-top',size=15)
+    app.energy.show()
+    app.hunger.show()
+    app.mood.show()
+    #energy
+    #hunger
+    #happiness
+
+
+
+def getExtraVars(app):
+    app.toIncrease = None
+    app.feeding = False
+    app.hedgeStatus = 'Alive (for now)'
+    app.energy = status('Energy',app.butX,app.statY,app.butW,app.statH/3,0.00005,'Tired')
+    app.energy.messages = ['Feeling a bit tired', 'Wanna go home','let me sleep please']
+    app.hunger = status('Hunger',app.butX,app.statY+app.statH/3+app.margin,app.butW,app.statH/3,0.0001,'Hungry')
+    app.hunger.messages = ['Feeling a bit hungry', 'Can I has food?','FEEEEEEEEED MEEEE']
+    app.mood = status('Mood',app.butX,app.statY+2*app.statH/3+2*app.margin,app.butW,app.statH/3,0.0002,'Bored')
+    app.mood.messages = ["I'm bored! Entertain me!","*sighs* you're no fun","ugh I might play league or something"]
+    app.hedgeMessage = "Hello!!!!!!"
+    #Alive, hungry, sleepy, bored
 def redrawAll(app):
     drawRect(app.boxX,app.boxY,app.boxW,app.boxH,fill=None,border='black')
     drawLabel('HedgePog',app.margin,app.margin,
